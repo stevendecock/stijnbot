@@ -78,6 +78,7 @@ var controller = Botkit.slackbot({
 });
 
 var numberOfUsers = 0;
+var botIds = [];
 
 var bot = controller.spawn({
     token: process.env.token
@@ -86,7 +87,11 @@ var bot = controller.spawn({
         throw new Error('Could not connect to Slack');
     }
 
-    numberOfUsers = payload.users.length;
+    payload.users.forEach(function (user) {
+        if (!user.is_bot) {
+            numberOfUsers++;
+        }
+    });
 });
 
 controller.hears(['hello', 'hi'], 'direct_message,direct_mention,mention', function(bot, message) {
