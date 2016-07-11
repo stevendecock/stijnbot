@@ -8,16 +8,16 @@ Met antwoorden op deze vragen kan slackbot een psychologisch profiel opstellen, 
 
 Command line:
 
-'npm install'
+`npm install`
 
 Set token on environment:
 
-  > on windows:
-  >`set token=<MY TOKEN>`
+  -on windows:
+  `set token=<MY TOKEN>`
 
-  >on mac:
-  >`export token=<MY TOKEN>`
+  -on mac:
+  `export token=<MY TOKEN>`
 
 Run:
 
-'npm run server'
+`npm run server`
