@@ -73,13 +73,21 @@ var Botkit = require('../node_modules/botkit/lib/Botkit.js');
 var os = require('os');
 
 var controller = Botkit.slackbot({
-    debug: true
+    debug: true,
+    json_file_store: 'db'
 });
+
+var numberOfUsers = 0;
 
 var bot = controller.spawn({
     token: process.env.token
-}).startRTM();
+}).startRTM(function(err,bot,payload) {
+    if (err) {
+        throw new Error('Could not connect to Slack');
+    }
 
+    numberOfUsers = payload.users.length;
+});
 
 controller.hears(['hello', 'hi'], 'direct_message,direct_mention,mention', function(bot, message) {
 
@@ -227,73 +235,6 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
 
     });
 
-/*
- Custom code for stijnbot
- */
-var teller = 0;
-var lastDateSinceHappinessQuestion;
-var treshold = 5;
-var userHappiness = [];
-
-controller.hears(['was ik blij?'], 'direct_message,direct_mention,mention', function (bot, message) {
-    if (userHappiness[message.user] !== undefined) {
-        bot.reply(message, 'U was ' + (userHappiness[message.user] ? 'blij' : 'niet blij'));
-    }
-    else {
-        bot.reply(message, 'Ik heb geen idee.');
-    }
-});
-
-
-controller.on('ambient', function (bot, message) {
-    teller++;
-    if (shouldIAskForHappiness()) {
-        bot.startPrivateConversation(message, function (err, convo) {
-            if (!err) {
-                convo.ask('Ben je blij?', [
-                    {
-                        pattern: 'ja',
-                        callback: function (response, convo) {
-                            userHappiness[message.user] = true;
-                            bot.reply(response, 'ideaal!');
-                            convo.stop();
-                        }
-                    },
-                    {
-                        pattern: 'nee',
-                        callback: function (response, convo) {
-                            userHappiness[message.user] = false;
-                            bot.reply(message, 'oei, dat is spijtig');
-                            convo.stop();
-                        }
-                    }
-                ]);
-            }
-        });
-    }
-});
-
-function shouldIAskForHappiness() {
-    if (!lastDateSinceHappinessQuestion) {
-        lastDateSinceHappinessQuestion = new Date();
-        return true;
-
-    } else {
-        var tempDate = new Date()
-        if (daydiff(lastDateSinceHappinessQuestion, tempDate) > treshold) {
-            var ask = Math.round(Math.random());
-            if (ask) {
-                lastDateSinceHappinessQuestion = tempDate;
-            }
-            return ask;
-        }
-    }
-}
-
-function daydiff(first, second) {
-    return Math.round((second - first) / (1000 * 60 * 60 * 24));
-}
-
 function formatUptime(uptime) {
     var unit = 'second';
     if (uptime > 60) {
@@ -310,4 +251,104 @@ function formatUptime(uptime) {
 
     uptime = uptime + ' ' + unit;
     return uptime;
+}
+
+/*
+ Custom code for stijnbot
+ */
+var teller = 0;
+var lastDateSinceHappinessQuestion;
+var treshold = 20;
+
+controller.hears(['not happy', 'niet blij'], 'direct_message,direct_mention,mention', function(bot, message) {
+
+    bot.api.reactions.add({
+        timestamp: message.ts,
+        channel: message.channel,
+        name: 'camel',
+    }, function(err, res) {
+        if (err) {
+            bot.botkit.log('Failed to add emoji reaction :(', err);
+        }
+    });
+
+    controller.storage.users.get(message.user, function(err, user) {
+        if (user && user.name) {
+            bot.reply(message, user.name + ' niet blij?');
+        } else {
+            bot.reply(message, 'Ben je niet blij?');
+        }
+    });
+});
+
+controller.hears(['was ik blij?'], 'direct_message,direct_mention,mention', function (bot, message) {
+    controller.storage.users.get(message.user, function(err, user_data) {
+        if (user_data !== undefined) {
+            bot.reply(message, 'U was ' + (user_data.blij ? 'blij' : 'niet blij'));
+        } else {
+            bot.reply(message, 'Ik heb geen idee.');
+        }
+    });
+});
+
+controller.hears(['is het team blij?'], 'direct_message,direct_mention,mention', function (bot, message) {
+    controller.storage.users.all(function (err, all_user_data) {
+        var aantalHappy = 0;
+        var aantalUnhappy = 0;
+        all_user_data.forEach(function (user) {
+            if (user.blij)  {
+                aantalHappy++;
+            } else {
+                aantalUnhappy++;
+            }
+        });
+        bot.reply(message, 'Van het team zijn er ' + aantalHappy + ' blij, ' + aantalUnhappy + ' niet blij. Van ' + (numberOfUsers - aantalHappy - aantalUnhappy) + ' teamleden weet ik het niet .');
+    });
+});
+
+controller.on('ambient', function (bot, message) {
+    teller++;
+    controller.storage.users.get(message.user, function(err, user_data) {
+        var tempDate = new Date();
+        if (user_data === undefined) {
+            user_data = {id: message.user}
+        }
+        console.log('user_data.lastDateSinceHappinessQuestion (' + message.user + '): ' + user_data.lastDateSinceHappinessQuestion);
+        if (user_data.blij === undefined || user_data.lastDateSinceHappinessQuestion === undefined || secondsDiff(user_data.lastDateSinceHappinessQuestion, tempDate) > treshold) {
+            bot.startPrivateConversation(message, function (err, convo) {
+                if (!err) {
+                    convo.ask('Ben je blij?', [
+                        {
+                            pattern: 'ja',
+                            callback: function (response, convo) {
+                                user_data.blij = true;
+                                user_data.lastDateSinceHappinessQuestion = tempDate;
+                                controller.storage.users.save(user_data, function(err) {});
+                                bot.reply(response, 'ideaal!');
+                                convo.stop();
+                            }
+                        },
+                        {
+                            pattern: 'nee',
+                            callback: function (response, convo) {
+                                user_data.blij = false;
+                                user_data.lastDateSinceHappinessQuestion = tempDate;
+                                controller.storage.users.save(user_data, function(err) {});
+                                bot.reply(response, 'oei, dat is spijtig');
+                                convo.stop();
+                            }
+                        }
+                    ]);
+                }
+            });
+        }
+    });
+});
+
+function daydiff(first, second) {
+    return Math.round((second - first) / (1000 * 60 * 60 * 24));
+}
+
+function secondsDiff(first, second) {
+    return Math.round((second.getTime() - first.getTime()) / (1000));
 }
