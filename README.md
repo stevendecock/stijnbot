@@ -1,0 +1,2 @@
+# stijnbot
+Stijn Slackbot
