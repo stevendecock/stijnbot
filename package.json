@@ -6,6 +6,7 @@
     "server": "node src/slack_bot.js"
   },
   "dependencies": {
-    "botkit": "0.2.2"
+    "botkit": "0.2.2",
+    "fortune-teller": "0.1.2"
   }
 }
