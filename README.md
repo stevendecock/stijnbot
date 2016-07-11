@@ -8,7 +8,7 @@ Met antwoorden op deze vragen kan slackbot een psychologisch profiel opstellen, 
 
 Command line:
 
-`npm install --save botkit`
+'npm install'
 
 Set token on environment:
 on windows:
@@ -18,4 +18,4 @@ on mac:
 
 Run:
 
-`node slack_bot.js`
+'npm run server'
