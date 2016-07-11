@@ -352,3 +352,9 @@ function daydiff(first, second) {
 function secondsDiff(first, second) {
     return Math.round((second.getTime() - first.getTime()) / (1000));
 }
+
+var fortune = require('../node_modules/fortune-teller');
+
+controller.hears(['Speak'], 'direct_message,direct_mention,mention', function (bot, message) {
+    bot.reply(message, fortune.fortune());
+});
