@@ -12,10 +12,10 @@ Command line:
 
 Set token on environment:
 
-  -on windows:
+  - on windows:
   `set token=<MY TOKEN>`
 
-  -on mac:
+  - on mac:
   `export token=<MY TOKEN>`
 
 Run:
