@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "server": "node slack_bot.js"
+    "server": "node src/slack_bot.js"
   },
   "dependencies": {
     "botkit": "0.2.2"
