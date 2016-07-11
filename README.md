@@ -11,10 +11,12 @@ Command line:
 'npm install'
 
 Set token on environment:
-on windows:
-`set token=<MY TOKEN>`
-on mac:
-`export token=<MY TOKEN>
+
+  on windows:
+  `set token=<MY TOKEN>`
+
+  on mac:
+  `export token=<MY TOKEN>`
 
 Run:
 
