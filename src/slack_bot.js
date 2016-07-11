@@ -227,6 +227,73 @@ controller.hears(['uptime', 'identify yourself', 'who are you', 'what is your na
 
     });
 
+/*
+ Custom code for stijnbot
+ */
+var teller = 0;
+var lastDateSinceHappinessQuestion;
+var treshold = 5;
+var userHappiness = [];
+
+controller.hears(['was ik blij?'], 'direct_message,direct_mention,mention', function (bot, message) {
+    if (userHappiness[message.user] !== undefined) {
+        bot.reply(message, 'U was ' + (userHappiness[message.user] ? 'blij' : 'niet blij'));
+    }
+    else {
+        bot.reply(message, 'Ik heb geen idee.');
+    }
+});
+
+
+controller.on('ambient', function (bot, message) {
+    teller++;
+    if (shouldIAskForHappiness()) {
+        bot.startPrivateConversation(message, function (err, convo) {
+            if (!err) {
+                convo.ask('Ben je blij?', [
+                    {
+                        pattern: 'ja',
+                        callback: function (response, convo) {
+                            userHappiness[message.user] = true;
+                            bot.reply(response, 'ideaal!');
+                            convo.stop();
+                        }
+                    },
+                    {
+                        pattern: 'nee',
+                        callback: function (response, convo) {
+                            userHappiness[message.user] = false;
+                            bot.reply(message, 'oei, dat is spijtig');
+                            convo.stop();
+                        }
+                    }
+                ]);
+            }
+        });
+    }
+});
+
+function shouldIAskForHappiness() {
+    if (!lastDateSinceHappinessQuestion) {
+        lastDateSinceHappinessQuestion = new Date();
+        return true;
+
+    } else {
+        var tempDate = new Date()
+        if (daydiff(lastDateSinceHappinessQuestion, tempDate) > treshold) {
+            var ask = Math.round(Math.random());
+            if (ask) {
+                lastDateSinceHappinessQuestion = tempDate;
+            }
+            return ask;
+        }
+    }
+}
+
+function daydiff(first, second) {
+    return Math.round((second - first) / (1000 * 60 * 60 * 24));
+}
+
 function formatUptime(uptime) {
     var unit = 'second';
     if (uptime > 60) {
